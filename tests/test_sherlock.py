@@ -46,7 +46,8 @@ def test_missing_binary(module, monkeypatch, tmp_path):
 @pytest.mark.live
 @pytest.mark.skipif(not shutil.which("sherlock"), reason="sherlock not installed")
 def test_live_matches_raw_output(module, record, tmp_path, monkeypatch):
-    username = os.environ.get("RECONKIT_TEST_USERNAME", "carlmasters02")
+    # octocat: GitHub's public demo account, so at least one hit is expected
+    username = os.environ.get("RECONKIT_TEST_USERNAME", "octocat")
     monkeypatch.chdir(tmp_path)
     seen = record(sherlock_mod)
 

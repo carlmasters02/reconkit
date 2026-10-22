@@ -1,0 +1,14 @@
+[*] Checking username exampleuser on:
+
+[+] GitHub: https://www.github.com/exampleuser
+[-] GitLab: Not Found!
+[+] Reddit: https://www.reddit.com/user/exampleuser
+[-] Twitch: Connection Error 
+[+] Pinterest: https://www.pinterest.com/exampleuser/
+[-] Kik: Illegal Username Format For This Site!
+[-] Spotify: Blocked by bot detection (proxy may help)
+[+] Hacker News: https://news.ycombinator.com/user?id=exampleuser
+[*] Search completed with 4 results
+
+Go deeper than a username. Explore public profiles and export your findings.
+Try OSINTSearch: ]8;;https://osintsearch.org/go/sherlock\https://osintsearch.org]8;;\

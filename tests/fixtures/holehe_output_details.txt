@@ -1,0 +1,12 @@
+
+
+*************************
+   someone@example.com
+*************************
+[+] amazon.com j****@gmail.com / +1 ******42
+[+] github.com
+[+] twitter.com / +44 *******11
+[+] office365.com j****@outlook.com / FullName John Doe
+
+[+] Email used, [-] Email not used, [x] Rate limit
+121 websites checked in 0.0 seconds

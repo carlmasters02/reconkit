@@ -15,7 +15,7 @@ their licenses and credit, and adding a tool is ~20 lines.
 ## Install
 
 ```bash
-git clone https://github.com/carl-masters/reconkit && cd reconkit
+git clone https://github.com/carlmasters02/reconkit && cd reconkit
 pipx install .          # or: pip install -e .
 ```
 

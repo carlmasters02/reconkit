@@ -4,6 +4,6 @@ __pycache__/
 .venv/
 dist/
 build/
-*.json
+reports/
 *.md.out
 report.*

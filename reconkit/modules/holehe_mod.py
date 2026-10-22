@@ -10,9 +10,11 @@ from ..core.registry import register
 from ..core.runner import run_cmd, timed, elapsed, ToolError
 from ..core.schema import ReconResult, Finding, TargetType
 
-# A hit is "[+] <domain>". The legend line "[+] Email used, [-] Email not
-# used, [x] Rate limit" also starts with [+], so require a lone domain.
-_HIT = re.compile(r"^\[\+\]\s+([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)$")
+# A hit is "[+] <domain>", optionally followed by recovery details
+# ("j***@gmail.com / +1 ***42 / FullName ..."). The legend line "[+] Email
+# used, [-] Email not used, [x] Rate limit" also starts with [+], so the
+# first token must be a domain.
+_HIT = re.compile(r"^\[\+\]\s+([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)(?:\s+(.*))?$")
 
 
 @register(
@@ -34,6 +36,9 @@ def run(target: str) -> ReconResult:
     for line in stdout.splitlines():
         m = _HIT.match(line.strip())
         if m:
-            res.findings.append(Finding(label="registered", value=m[1], source="holehe"))
+            details = (m[2] or "").removeprefix("/").strip()
+            extra = {"details": details} if details else {}
+            res.findings.append(Finding(label="registered", value=m[1], source="holehe",
+                                        extra=extra))
     res.duration_s = elapsed(start)
     return res

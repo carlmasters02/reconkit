@@ -3,6 +3,7 @@ Reimplements X-osint's DNS lookup + reverse features (clean-room)."""
 
 from __future__ import annotations
 
+import ipaddress
 import socket
 
 from ..core.registry import register
@@ -23,7 +24,9 @@ def run(target: str) -> ReconResult:
         _, _, ips = socket.gethostbyname_ex(target)
         for ip in ips:
             res.findings.append(Finding("A", ip, "dns"))
-    except socket.gaierror as e:
+    # gaierror/herror are OSErrors; malformed names (empty or >63-char
+    # labels) fail IDNA encoding with UnicodeError before any lookup
+    except (OSError, UnicodeError) as e:
         res.ok, res.error = False, f"resolution failed: {e}"
     res.duration_s = elapsed(start)
     return res
@@ -39,11 +42,17 @@ def run_rev(target: str) -> ReconResult:
     start = timed()
     res = ReconResult(module="revdns", target=target, target_type=TargetType.IP)
     try:
-        host, aliases, _ = socket.gethostbyaddr(target)
+        ip = ipaddress.ip_address(target.strip())
+    except ValueError:
+        res.ok, res.error = False, f"not a valid IP address: {target!r}"
+        res.duration_s = elapsed(start)
+        return res
+    try:
+        host, aliases, _ = socket.gethostbyaddr(str(ip))
         res.findings.append(Finding("PTR", host, "revdns"))
         for a in aliases:
             res.findings.append(Finding("alias", a, "revdns"))
-    except socket.herror as e:
+    except OSError as e:  # herror (no PTR) and gaierror are both OSErrors
         res.ok, res.error = False, f"reverse lookup failed: {e}"
     res.duration_s = elapsed(start)
     return res

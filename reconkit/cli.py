@@ -13,6 +13,7 @@ from pathlib import Path
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from . import modules  # noqa: F401 — side effect: registers all modules
@@ -97,7 +98,11 @@ def run(
     total = sum(len(r.findings) for r in results)
     console.print(f"\n[bold]{total} findings across {len(results)} modules[/bold]")
     for r in results:
-        console.print(f"  {r.module}: {len(r.findings)} ({r.duration_s}s)")
+        if r.ok:
+            console.print(f"  {r.module}: {len(r.findings)} ({r.duration_s}s)")
+        else:
+            # escape: errors like "[Errno -2] ..." would otherwise parse as markup
+            console.print(f"  [red]{r.module}: failed[/red] — {escape(r.error or '')}")
 
     if json_out:
         Path(json_out).write_text(dump_json(results), encoding="utf-8")

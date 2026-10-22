@@ -32,11 +32,18 @@ def run(target: str) -> ReconResult:
             res.duration_s = elapsed(start)
             return res
 
-    valid = phonenumbers.is_valid_number(num)
-    res.findings.append(Finding("valid", str(valid), "phone"))
-    res.findings.append(Finding("e164", phonenumbers.format_number(
-        num, phonenumbers.PhoneNumberFormat.E164), "phone"))
-    res.findings.append(Finding("region", geocoder.description_for_number(num, "en"), "phone"))
+    e164 = phonenumbers.format_number(num, phonenumbers.PhoneNumberFormat.E164)
+    # Parseable-but-invalid input (e.g. "123") yields junk region/timezone data
+    if not phonenumbers.is_valid_number(num):
+        res.ok, res.error = False, f"not a valid phone number (parsed as {e164})"
+        res.duration_s = elapsed(start)
+        return res
+
+    res.findings.append(Finding("valid", "True", "phone"))
+    res.findings.append(Finding("e164", e164, "phone"))
+    region = geocoder.description_for_number(num, "en")
+    if region:
+        res.findings.append(Finding("region", region, "phone"))
     car = carrier.name_for_number(num, "en")
     if car:
         res.findings.append(Finding("carrier", car, "phone"))

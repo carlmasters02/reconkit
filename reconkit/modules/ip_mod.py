@@ -3,6 +3,7 @@ Reimplements X-osint's IP-info feature (clean-room)."""
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import urllib.request
 
@@ -22,7 +23,15 @@ _FIELDS = ("country", "regionName", "city", "isp", "org", "as", "lat", "lon", "t
 def run(target: str) -> ReconResult:
     start = timed()
     res = ReconResult(module="ipinfo", target=target, target_type=TargetType.IP)
-    url = f"http://ip-api.com/json/{target}?fields=status,message,{','.join(_FIELDS)}"
+    # Validate before building the URL: a raw target like "8.8.8.8/../1.1.1.1"
+    # would otherwise query a different IP and report it under this target.
+    try:
+        ip = ipaddress.ip_address(target.strip())
+    except ValueError:
+        res.ok, res.error = False, f"not a valid IP address: {target!r}"
+        res.duration_s = elapsed(start)
+        return res
+    url = f"http://ip-api.com/json/{ip}?fields=status,message,{','.join(_FIELDS)}"
     try:
         with urllib.request.urlopen(url, timeout=15) as resp:  # noqa: S310 — fixed host
             data = json.loads(resp.read().decode())

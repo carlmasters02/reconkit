@@ -3,13 +3,14 @@ Upstream: https://github.com/sherlock-project/sherlock (MIT)"""
 
 from __future__ import annotations
 
-import json
-import tempfile
-from pathlib import Path
+import re
 
 from ..core.registry import register
 from ..core.runner import run_cmd, timed, elapsed, ToolError
 from ..core.schema import ReconResult, Finding, TargetType
+
+# sherlock 0.16 prints each hit to stdout as "[+] <Site>: <URL>"
+_HIT = re.compile(r"^\[\+\]\s+(.+?):\s+(https?://\S+)$")
 
 
 @register(
@@ -21,21 +22,17 @@ from ..core.schema import ReconResult, Finding, TargetType
 def run(target: str) -> ReconResult:
     start = timed()
     res = ReconResult(module="sherlock", target=target, target_type=TargetType.USERNAME)
-    with tempfile.TemporaryDirectory() as tmp:
-        out = Path(tmp) / f"{target}.json"
-        try:
-            # --nsfw off, JSON output, only print found
-            run_cmd(["sherlock", target, "--output", str(out), "--print-found"], timeout=240)
-        except ToolError as e:
-            res.ok, res.error = False, str(e)
-            res.duration_s = elapsed(start)
-            return res
-        # sherlock writes <username>.txt by default; parse the txt of found URLs
-        txt = Path(tmp) / f"{target}.txt"
-        if txt.exists():
-            for line in txt.read_text(encoding="utf-8", errors="ignore").splitlines():
-                line = line.strip()
-                if line.startswith("http"):
-                    res.findings.append(Finding(label="account", value=line, source="sherlock"))
+    try:
+        # --nsfw off; no files written (0.16 only writes a txt with --txt)
+        stdout, _, _ = run_cmd(
+            ["sherlock", target, "--print-found", "--no-color"], timeout=240)
+    except ToolError as e:
+        res.ok, res.error = False, str(e)
+        res.duration_s = elapsed(start)
+        return res
+    for line in stdout.splitlines():
+        m = _HIT.match(line.strip())
+        if m:
+            res.findings.append(Finding(label=m[1], value=m[2], source="sherlock"))
     res.duration_s = elapsed(start)
     return res

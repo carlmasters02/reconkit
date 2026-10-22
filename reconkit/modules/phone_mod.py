@@ -21,12 +21,16 @@ def run(target: str) -> ReconResult:
     from phonenumbers import carrier, geocoder, timezone
 
     try:
-        # target should be E.164, e.g. +14155552671
+        # E.164 (e.g. +14155552671) parses without a region
         num = phonenumbers.parse(target, None)
-    except phonenumbers.NumberParseException as e:
-        res.ok, res.error = False, f"parse error: {e}"
-        res.duration_s = elapsed(start)
-        return res
+    except phonenumbers.NumberParseException:
+        try:
+            # national format (e.g. 352-989-6238) needs a default region
+            num = phonenumbers.parse(target, "US")
+        except phonenumbers.NumberParseException as e:
+            res.ok, res.error = False, f"parse error: {e}"
+            res.duration_s = elapsed(start)
+            return res
 
     valid = phonenumbers.is_valid_number(num)
     res.findings.append(Finding("valid", str(valid), "phone"))

@@ -4,9 +4,15 @@ process, not imported, so reconkit stays MIT)."""
 
 from __future__ import annotations
 
+import re
+
 from ..core.registry import register
 from ..core.runner import run_cmd, timed, elapsed, ToolError
 from ..core.schema import ReconResult, Finding, TargetType
+
+# A hit is "[+] <domain>". The legend line "[+] Email used, [-] Email not
+# used, [x] Rate limit" also starts with [+], so require a lone domain.
+_HIT = re.compile(r"^\[\+\]\s+([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)$")
 
 
 @register(
@@ -19,16 +25,15 @@ def run(target: str) -> ReconResult:
     start = timed()
     res = ReconResult(module="holehe", target=target, target_type=TargetType.EMAIL)
     try:
-        stdout, _, _ = run_cmd(["holehe", "--only-used", target], timeout=180)
+        stdout, _, _ = run_cmd(
+            ["holehe", "--only-used", "--no-color", "--no-clear", target], timeout=180)
     except ToolError as e:
         res.ok, res.error = False, str(e)
         res.duration_s = elapsed(start)
         return res
     for line in stdout.splitlines():
-        line = line.strip()
-        # holehe marks used accounts with a leading [+]
-        if line.startswith("[+]"):
-            site = line.removeprefix("[+]").strip()
-            res.findings.append(Finding(label="registered", value=site, source="holehe"))
+        m = _HIT.match(line.strip())
+        if m:
+            res.findings.append(Finding(label="registered", value=m[1], source="holehe"))
     res.duration_s = elapsed(start)
     return res
